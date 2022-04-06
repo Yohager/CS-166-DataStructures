@@ -1,4 +1,4 @@
-### Range Minimum Queries 
+### Range Minimum Queries (2022.3.29)
 
 ---
 
@@ -206,4 +206,171 @@ $O((n/b)\log(n/b))=O((n/\log n)\log(n/\log n))=O(n)$.
 | Hybrid 4           | $\langle O(n),O(\log\log n) \rangle$      |
 
 ---
+
+### Range Minimum Queries (2022.4.1)
+
+在上一个lecture中，最后给出的一系列的hybrid的方法，我们回顾思路，大概是先进行分块，然后每个块上进行RMQ，其中分为block的RMQ和聚合的RMQ.
+
+从抽象的角度来看，这一类的hybrid strategies得到的结果有如下的预处理时间复杂度和查询时间复杂度：
+
+- preprocessing time: $O(n+p_1(n/b)+(n/b)p_2(b))$. 怎样理解？首先$O(n)$处理分块，然后$O(p_1(n/b))$summary RMQ的预处理，$O((n/b)p_2(b))$进行每个block的预处理。
+- query time: $O(q_1(n/b)+q_2(b))$. 怎样理解？在每个块中的查询需要$O(q_2(b))$同时在summary RMQ中的查询需要$O(q_1(n/b))$. 
+
+那么下面一个问题是是否存在$\langle O(n),O(1) \rangle$的RMQ结构？
+
+假设存在的话，这里的$p_2(b)$的时间复杂度应该为$O(b)$，同时$q_2(b)$的时间复杂度应该为$O(1)$. 
+
+如何在每个块上构建一种$O(b)$时间预处理同时$O(1)$时间查询的方法？
+
+> Solve RMQ on a large number of small arrays with $O(1)$ query time and total preprocessing time $O(n)$?
+
+<font color=red>hint: $RMQ_A(i,j)$ denote the index with min val in the range i to j rather than the val itself.</font>
+
+如果RMQ结构返回的index而非values则我们使用单个RMQ结构就可以得到多个arrays的结果。
+
+假设我们使用sparse table用于summary RMQ同时使用full-preprocessing的RMQ用于block，与之前的hybrid方法不同之处在于我们考虑在blocks之间共享这种RMQ结构，只有结构相同才能够共享。
+
+这种方法在平均情况下可以得到一种$\langle O(n),O(1) \rangle$的RMQ数据结构. 
+
+<font color=red>现在需要考虑两个重要的问题</font>
+
+- 我们如何判定两个block是结构相同的？
+- 通过选择不同的$b$ value考虑存在多少种不同的block的type？
+
+第一个思路是不太可行的。第二个我们考虑如何选择$b$的值的问题。
+
+我们可以非常直接的给出两个block类型相同的定义：
+
+- 假设存在两个blocks $B_1$和$B_2$，他们的长度都为$b$. 
+
+- 我们认为两者type相同$(B_1\sim B_2)$如果下式成立：
+  $$
+  RMQ_{B_1}(i,j)=RMQ_{B_2}(i,j),\forall 0\leq i\leq j <b
+  $$
+
+刚刚是从定义上给出两者type相同的，考虑如何从code层面实现这个问题，最直接的方法是分别构建RMQ之后判定是否结果相同。但事实上不需要这样。
+
+我们可以考虑每个block中的array的permutation type，假设升序表示为$(1,2,\cdots,n)$. 那么我们不难给出以下的推论：
+
+**Lemma**: If $B_1$ and $B_2$ have the same permutation type, then $B_1\sim B_2$.
+
+但是注意这里并不是充要条件，因为可能存在两者type相同但是permutation不同。
+
+另一个很重要的问题是这里permutation的数量为$b!$. 这个$b$显然必须取的很小才可行。
+
+继续观察：
+
+**claim**: 如果$B_1\sim B_2$那么显然我们知道每个block的最小的值一定有相同的index.
+
+**claim**: 上一个claim的性质一定是在左右的每个subarrays中都要成立的。
+
+至此一个很重要的数据结构：**Cartesian Tree**
+
+- 根节点为array中的最小值。
+- left和right sub-tree都是一个Cartesian Tree分别对应着array的左右两边的sub-arrays.
+
+**Definition:**
+
+> The Cartesian tree for an array is a binary tree obeying the min-heap property whose inorder-traversal gives back the original array.
+
+**Theorem**: Let $B_1$ and $B_2$ be blocks of length $b$, then $B_1\sim B_2$ iff $B_1$ and $B_2$ have isomorphic Cartesian trees. (same shape tree)
+
+如何构建一个Cartesian Tree
+
+最基本的方法：
+
+- 找到最小值
+- 对于array的最小值的左边的sub-array递归构建一个Cartesian Tree
+- 对于array的最小值的右边的sub-array递归构建一个Cartesian Tree
+- return the whole tree 
+
+这个分治算法的时间复杂度：
+$$
+T(n)=T(n_{left})+T(n_{right}) + O(n)
+$$
+<font color=red>这个分治的过程太像快速排序了！</font>
+
+实际上算法的时间复杂度与快速排序是类似的，平均意义下，如果最小值在中间的话大概是$O(n\log n)$而如果最小值在边上则退化到$O(n^2)$. 
+
+构建Cartesian Tree有没有更快的算法呢？
+
+我们考虑这样：从第一个元素开始，依次往里面加元素同时调整树.
+
+此时我们需要借助一个栈：
+
+- 从栈中一直弹出元素直到栈顶元素大于当前的新的即将加入栈的元素或者栈为空
+- 将新元素压入栈中
+- 将最近从栈中弹出来的元素作为新元素的左孩子
+
+这种方法构建Cartesian Tree的时间复杂度为$O(b)$, 其中$b$为array的长度。
+
+现在我们就有了一种在$O(n)$时间复杂度内的构建Cartesian Tree的算法了。
+
+**Theorem**: The number of distinct Cartesian tree shape for arrays of length $b$ is at most $4^b$.
+
+(实际上的数字为$\frac{1}{b+1}\binom{2b}{b}=\frac{4^b}{b^{3/2}\sqrt{\pi}}$). 详情了解**Catalan Number**
+
+本质上最多有$2b$次stack的操作，$b$次push以及$b$次pop操作。
+
+这样对于每一个block我们可以得到一个对应的Cartesian Number，在实际操作中我们并不需要真正的构建这个Tree，而是通过比对Cartesian Number来判别两个block是否type相同。
+
+回到开始提出的问题：
+
+- 我们如何判定两个block是结构相同的？
+- 通过选择不同的$b$ value考虑存在多少种不同的block的type？
+
+**[Answer]**:
+
+- 当两个block的Cartesian Tree Number相同时我们认为结构相同。
+- 至多$4^b$种不同的type.
+
+由此我们可以给出如下的结构：
+
+<img src="../pics/cartesian-tree1.png" alt="Cartesian Tree RMQ" style="zoom:60%;" />
+
+下面分析其时间复杂度：Preprocessing: $O(n+(n/b)\log (n/b)+b^24^b)$.
+
+其中：
+
+- $O(n)$ 计算block minima，计算每个block的Cartesian Tree Number.
+- $O((n/b)\log(n/b))$表示为build a sparse table on blocks of size $n/b$.
+- $O(b^2 4^b)$表示为construct至多$4^b$个block RMQ结构，每一个的时间复杂度为$O(b^2)$.
+
+这里我们选择$b=k\log_4 n$.
+$$
+\begin{split}
+&O(n+(n/k\log_4 n)\log(n/k\log_4 n)+k^2(\log_4 n)^2+n^k)\\
+=& O(n+(n/\log n)\log n) + (\log n)^2 n^k\\
+=&O(n)
+\end{split}
+$$
+这里考虑取一个$k=\frac{1}{2}$, 整体的preprocessing的时间为$O(n)$.
+
+这种RMQ的结构被称为Fischer-Heun Structure. 这是一种改进的hybrid RMQ framework. 
+
+- set $b=\frac{1}{2}\log_4 n =\frac{1}{4}\log_2 n$.
+- 将input的array分为size为$b$的blocks，计算每个block的最小值。
+- 给这些最小值的新array构建一个sparse table. 
+- 构建一个per-block RMQ结构，计算每个block的Cartesian Tree Number. 
+- 将相同结构的block映射到一起。
+
+这样我们就得到了一个$\lang O(n),O(1) \rang$的RMQ结构。
+
+**Further**:
+
+这种构建模型的思路是"Methods of Four Russians"或者说"Four Russians Speedup". 
+
+- 按照block拆分问题。(**macro/micro decomposition**)
+- 处理所有的block下的子问题。
+- 通过合并所有block的问题的解得到最终的解。
+
+**"Divide Precompute Conquer"**.
+
+关于为什么叫四个俄罗斯人算法，因为这个方法来自于一篇文章，其作者是四个俄罗斯人。
+
+一些相关的内容：
+
+- Lowest Common Ancestors
+- Succinct RMQ 
+- Durocher's RMQ Structure
 

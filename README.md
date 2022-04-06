@@ -18,5 +18,8 @@ Last year 2021 Lecture Topics:
 
 Updating 2022 Lecture Topics:
 
-- (March 29) Range Minimum Queries Part One 
+- (March 29) Range Minimum Queries Part One (Full Preprocessing, Block Partition, Sparse Table, Hybrid Methods, ...)
 
+- (April 1) Range Minimum Queries Part Two (Cartesian Tree, Fischer-Heun Structure, Method of Four Russians, ...)
+
+- (April 6) Balanced Trees Part One (B-Trees, Red/Black Trees, Augmented Search Trees, ...) 
