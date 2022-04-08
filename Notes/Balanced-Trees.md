@@ -169,3 +169,108 @@ Hard disks很便宜但是很慢。
 现在考虑红黑树的问题，如果我们考虑将红色节点和他们的parents合并起来，我们就会得到一个2-3-4 Tree. 
 
 事实上红黑树是2-3-4 Tree的一种等值线(isometry). 
+
+### Part Two 
+
+回顾一下上一个lecture的内容：2-3-4 Trees 多路搜索树
+
+- 每个节点有1/2/3个keys；
+- 任何一个有$k$个keys的非叶子节点都一定有$k+1$个children；
+- 所有的叶子节点都在同一层（深度相同）；
+
+考虑在2-3-4 tree中添加一个元素，将其放入一个叶子节点，如果超出了空间就将叶子分裂并将中间的值放入上一层，其他值仍然作为叶子。
+
+再看红黑树的定义：
+
+- 每个节点要么是红色要么是黑色；
+- root节点一定是黑色；
+- 所有的红色节点不会有红色child；
+- 每个条从root到叶子节点的路径一定会遇到相同数量的黑色节点；
+
+<font color=red>如果我们将红黑树中的所有红色节点并到其上层祖先节点中，则红黑树变为一棵2-3-4 tree</font>
+
+Red/Black Tree和2-3-4 Tree之间是可以相互转换的。
+
+**Theorem**: The maximum height of a red/black tree with $n$ nodes is $O(\log n)$.
+
+简单的将2-3-4 Tree的节点进行分类：
+
+- 2-node: one key with two children;
+- 3-node: two keys with three children;
+- 4-node: three keys with four children;
+
+对比Red/Black tree 和 2-3-4 tree，我们来讨论其插入的规则；
+
+**rule 1**: 当插入一个节点时，如果其父亲节点时黑色的，那么将这个节点涂为红色，同时挂在父亲节点下方，结束。
+
+（Hint: 这相当于在2-3-4 tree中，插入一个节点到2-node或者3-node中。） 
+
+Building Up Rules:
+
+- 将红黑树的构建映射到2-3-4 tree的构建规则中；
+- 考虑将一个节点插入一个node中需要$O(1)$的时间，而2-3-4 tree支持$O(\log n)$的插入，那么红黑树自然也会支持$O(\log n)$的插入时间。
+- 删除节点是类似的。
+
+来自Keith老师的建议：
+
+- Do know how to do B-tree insertions and searches. (尤其记住如何分裂节点的)
+
+- Do remember the rules for red/black trees and B-trees. (2-3-4 trees的三条属性，red/black trees的四条属性)
+
+- Do remeber the isometry between red/black trees and 2-3-4 trees. 
+
+- Don't memorize the red/black rotations and color flips. 
+
+  This is rarely useful. If you are coding up a red/black tree, just flip open CLRS and translate the pseudocode. 
+
+  [Introduction to Algorithms](http://staff.ustc.edu.cn/~csli/graduate/algorithms/book6/toc.htm)
+
+  [Solutions to CLRS](https://sites.math.rutgers.edu/~ajl213/CLRS/CLRS.html)
+
+考虑一种动态的场景：Given an input X that can change in fix ways, maintain X while being able to compute $f(X)$ efficiently at any point in time. 
+
+**[Example]**: Given a list of distinct values and a number $k$, return the $k$-th-smallest value.
+
+在静态的情况下，即data set是固定的，k是已知的，我们可以在$O(n)$的时间内使用quickselect或者median-of-medians算法求解。
+
+如果变成动态的情况下：即data set是在不断变化的，这种情况下我们可以使用一种红黑树的变种来维护。
+
+**Order Statistic Trees** 
+
+- 首先是一棵红黑树；
+- 对每个节点标记，标记的值为其左子树的节点的个数；
+- 使用之前的更新规则（插入删除元素时旋转）来保存值；
+- 一直更改这棵tree直到到root节点。
+
+分析效果：
+
+- 在一次插入或者删除中只有$O(\log n)$的元素需要被更新同时每个更新的时间为$O(1)$. 
+- 在$O(\log n)$的时间内支持BST的所有操作同时还有寻找第k大的顺序统计量以及rank (给定一个元素报告其顺序统计的位置).
+
+扩展部分：1D Hierarchical Clustering 略
+
+Next Time:
+
+- Randomized Data Structures
+- Families of Hash Functions 
+- Count-Min Sketches
+
+---
+
+#### Personal Understanding 
+
+看完这一部分的Slides，感觉没有完全搞懂，还是再进一步加深一下理解：
+
+有一个理解：2-3-4 tree是自底向上构建起来的，不断向上顶出节点的过程；RB tree是自顶向下构建的过程，从上向下找添加节点的位置，然后通过旋转更新tree使得tree满足四条性质。
+
+假设我们有一个array: `[3,1,5,4,2,9,10]`.
+
+我们如何构建一个2-3-4 tree:
+
+1. 我们显然可以接纳3,1,5三个值，创建一个3-node，存储了：`1,3,5`
+
+2. 新值4进来后，发现这个3-node已经满了，因此将这个node进行分裂，从mid位置，重新创建一个节点，左子树存放`1`, 右子树存放`4,5`. 
+3. 新值2进来后，直接添加到root节点的左子树中，左子树`[1,2]`, root`[3]`, 右子树`[4,5]`.
+4. 新值9进来后，直接添加到右子树：左子树`[1,2]`, root`[3]`, 右子树`[4,5,9]`.
+5. 最后一个新值10进来后，添加到右子树，发现已满，分裂右子树，创建新节点`[5]`，将`[5]`合并到其parent中，同时`[4]`和`[9,10]`接到新的root节点下：tree: root`[3,5]`, 子树1`[1,2]`, 子树2`[4]`, 子树3`[9,10]`. 
+

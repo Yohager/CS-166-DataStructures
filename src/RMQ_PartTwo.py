@@ -9,26 +9,27 @@ class CartesianTree:
     
     def Process(self):
         stack = []
-        res_seq = []
+        res_seq = ''
         idx = 0
         while idx < self.length:
             if not stack:
-                res_seq.append('1')
+                res_seq += '1'
                 stack.append(self.array[idx])
                 idx += 1
             else:
                 if self.array[idx] >= stack[-1]:
                     stack.append(self.array[idx])
-                    res_seq.append('1')
+                    res_seq += '1'
                     idx += 1
                 else:
                     stack.pop()
-                    res_seq.append('0')
+                    res_seq += '0'
         while stack:
             stack.pop()
-            res_seq.append('0')
-        print(len(res_seq))
-        return ''.join(res_seq)
+            res_seq += '0'
+        # print(len(res_seq))
+        # return ''.join(res_seq)
+        return res_seq
 
 class SparseTable:
     def __init__(self,array) -> None:
