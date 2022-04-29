@@ -151,3 +151,96 @@ $$
 (v) & \text{otherwise}
 \end{cases}
 $$
+重新定义的$'(v)$与原$(v)$的差别在于如果左右子树的节点数量差值小于等于1则认为没有不平衡度。在重新定义后的势函数下：
+
+<img src="../pics/potential-function-2.png" alt="new potential function" style="zoom:60%;" />
+
+直觉上来说，如果一个以$v$为根节点的子树是完美平衡的（完全二叉树）那么我们认为$'(v)=0$.
+
+我们考虑两种情况：
+
+- 插入元素未触发子树重构。
+- 插入元素触发了子树重构。
+
+直觉上我们希望case-1的情况得到是一个小的$\Delta\Phi$同时case-2得到的是一个大的负的$\Delta \Phi$. 
+
+revisit一下计算公式：amortized-cost = real-cost + $k\cdot \Delta\Phi$.
+
+首先real-cost为$O(\log n)$, 其次每次我们插入一个节点，$(v)$的变化值应该是$\pm 1$. 在这条access path上共有$O(\log n)$个节点，同时$(v)$每次对于每个点的增量为1，也就是说对于$'(v)$的增量最多为2.从而我们知道$\Delta \Phi = O(\log n)$.
+
+Amortized-cost = $O(\log n) + k\cdot (O(\log n))=O(\log n)$. 
+
+直觉上来说对于每一个新插入的点，如果没有触发重构，则显然$\Delta \Phi = O(\log n)$，我们假设未来这个点的祖先节点可能会发生重构，直觉上我们可以认为这个$O(\log n)$的添加操作对应于未来的$O(\log n)$重构中贡献了$O(1)$的量的工作。
+
+假设$v$是scapegoat节点，我们考虑$(v)$:
+
+假设有新添加节点的分支为$x$同时另一个子树为$y$，我们考虑计算$(v) = \vert size(x) - size(y) \vert $.
+
+由于$v$是不平衡的：$\alpha-$imbalanced. 显然我们有$height(v) > \alpha \log size(v)$. 
+
+同时由于$v$是最深的那个不满足平衡的点显然我们知道$x,y$都是平衡的：$height(x)\leq \alpha \log size(x)$.
+
+由于新插入的点是子树中最深的点，我们还知道$height(v) = height(x) + 1$. 
+
+假设我们将所有的条件放在一起我们会得到：$\alpha \log size(v) < \alpha \log size(x) + 1$. 即：$size(v)< size(x)\cdot 2^{1/\alpha}$. 
+
+另外显然我们知道：$size(v) = size(x)+size(y)+1$.从而$size(x)+size(y) < size(x)\cdot 2^{1/\alpha}$. 这也就意味着$size(y) < size(x)\cdot(2^{1/\alpha}-1)$. 从而我们就能说明y分支上的节点个数一定要少于x分支。
+
+除此之外：
+$$
+\begin{split}
+(v) &= \vert size(x)-size(y) \vert\\
+&= size(x) - size(x) \cdot (2^{1/\alpha}-1)\\
+&= size(x)\cdot (2-2^{1/\alpha})
+\end{split}
+$$
+与不等式$size(v)<size(x)\cdot 2^{1/\alpha}$我们可以得到：$(v)> size(v)\cdot (2^{1-1/\alpha}-1)$. 
+
+考虑$\alpha$的取值，如果$\alpha$接近1，我们就要求这个tree是非常严格的平衡树，因此当一个不平衡的情况出现时，我们会发现$(v)$与$size(v)$的关系很小。反之关系很密切。
+
+对于任意的确定的$\alpha$而言，我们有$(v)=\Omega(size(v))$. 
+
+换句话说，这个scapegoat点总是会不平衡且至少是关于这个子树的节点的线性关系。
+
+总之这个均摊的时间复杂度为：$O(\log n)+O(size(v)) - k\cdot \Omega(size(v))$.
+
+直觉上来说，如果我们选择一个更小的$\alpha$我们会得到一个更加平衡的tree（更快的查找但是重构子树的代价会增加，即插入时间增加）；如果选择一个大的$\alpha$我们将会得到一个更加不平衡的树（查找时间增加，但是插入时间减少）。
+
+**考虑删除操作的时间成本**
+
+首先跟插入操作完全不一样的地方是，删除可能影响的是很多个节点的位置，删除一个节点可能会导致一个不相关的节点的高度超过阈值，或者使得多个不相关的节点的子树高度超过阈值。
+
+我们考虑假设原树的节点个数为$n$同时阈值高度为$\alpha\log n$, 同时假设删除完节点之后新的树的节点个数为$n_{new}$个，现在我们要考虑的就是：$\alpha \log n_{new}<\alpha \log n -1$. 结果就是$n_{new}< n \cdot 2 ^{-1/\alpha}$, 由于我们又知道这里的$\alpha$的范围是$(0,1)$，因此我们可以知道我们需要删除超过$n(1-2^{-1/\alpha})$的情况下才会出现整个tree需要重新平衡的问题。
+
+如果出现这种情况，我们考虑如何重新平衡这个tree:
+
+我们的做法是，不需要考虑太多关于这个树的结构的问题，直接重构以root节点的整个tree，得到一个新的完全二叉树即可。
+
+我们考虑分析删除操作的均摊复杂度，此时我们将势函数修改为：$\Phi=D+\sum_{v}'(v)$. 这里的$D$表示的是总计的删除次数。
+
+(1). 当我们不需要重构整个tree的时候删除的时间复杂度为$O(\log n)$, 对于新的势函数考虑如下条件：
+
+- $D$是一个一个增长的，因为我们每次是一个一个删除的。
+- $'(v)$对于每个在access path的节点来说，每次最多改变两次，同时这条路径上有$O(\log n)$个这样的点。
+
+均摊复杂度：$O(\log n) + k\cdot O(\log n) = O(\log n)$. 
+
+(2). 当我们需要重构整颗tree的时候，我们考虑这个势函数，重构完成之后$\sum_{v}'(v)=0$, 因此对于这个势函数而言存在一个未知的且非正的改变值。考虑$D$的改变值：
+
+- 当我们开始重构时，我们有$n=n_{\max}\cdot 2^{-1/\alpha}$个节点在tree中；
+- 这就意味着$D\geq n_{\max}\cdot (1-2^{-1/\alpha})$，也就是说$D\geq n\cdot (2^{1/\alpha}-1)=\Omega(n)$;
+- 而从这一步之后，我们将$D$重置为0，所以我们知道$\Delta D\leq -\Omega(n)$;
+
+因此我们一定有$\Delta \Phi \leq -\Omega(n)$.
+
+事实上，我们可以知道，对于单步删除成本是$O(\log n)$同时对于重构整个tree而言成本是$O(n)$;
+
+从均摊时间复杂度的角度来说：$O(\log n)+O(n) - K\cdot \Omega(n)$我们可以调整$K$从而使得最终的均摊复杂度为$O(\log n)$. 
+
+总结来看，对于这个scapegoat tree，也就是我们说的替罪羊树：首先查找的时间为$O(\log n)$，对于插入和删除操作来说，我们都证明了其从均摊时间复杂度的角度来说都是$O(\log n)$. 
+
+#### Next time:
+
+Tournament Heaps 
+
+Lazy Tournament Heaps 
