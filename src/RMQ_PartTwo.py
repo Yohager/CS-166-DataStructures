@@ -83,8 +83,22 @@ class HybridMethod:
         self.block_size = int((math.log(x=self.n,base=2))/4)
 
     
+    '''
+    procedures for this hybrid method 
+    <O(n), O(1)>
+    sparse table for summary rmq 
+    block partition
+    block rmq with Cartesian Tree and Cartesian Number 
+    '''
+
     def BlockPartition(self):
         pass
+
+    def STSummaryRMQ(self):
+        pass 
+
+    def BlockRMQ(self):
+        pass 
 
 
     
